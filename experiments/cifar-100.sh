@@ -4,10 +4,10 @@ DATASET=cifar-100
 N_CLASS=200
 
 # save directory
-OUTDIR=outputs/${DATASET}/10-task
+OUTDIR=outputs/${DATASET}/bs_64/10-task
 
 # hard coded inputs
-GPUID='0'
+GPUID='1 2 4'
 CONFIG=configs/cifar-100_prompt.yaml
 CONFIG_FT=configs/cifar-100_ft.yaml
 REPEAT=1
@@ -15,7 +15,7 @@ OVERWRITE=0
 
 ###############################################################
 
-# process inputs
+# # process inputs
 mkdir -p $OUTDIR
 
 # CODA-P

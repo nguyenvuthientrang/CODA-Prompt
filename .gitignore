@@ -1,6 +1,9 @@
 # repo-specific stuff
 data/
-outputs/
+# outputs/
+outputs_attack/
+outputs_clean/
+outputs_surrogate/
 *.pt
 \#*#
 .idea

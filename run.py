@@ -10,7 +10,7 @@ import numpy as np
 import yaml
 import json
 import random
-from trainer import Trainer
+from trainer import Trainer, Attacker, Victim
 
 def create_args():
     
@@ -41,7 +41,30 @@ def create_args():
     # Config Arg
     parser.add_argument('--config', type=str, default="configs/config.yaml",
                          help="yaml experiment config input")
+   
+    # Attack Args
+    parser.add_argument('--backdoor', action='store_true', default=True)
+    parser.add_argument('--dataset_path', type=str, default='./data/')
+    parser.add_argument('--target_lab', type=int, default=2)
+    parser.add_argument('--noise_size', type=int, default=224)
+    parser.add_argument('--l_inf_r', type=float, default=16/255)
+    parser.add_argument('--surrogate_epochs', type=int, default=200)
+    parser.add_argument('--generating_lr_warmup', type=float, default=0.1)
+    parser.add_argument('--warmup_round', type=int, default=5)
+    parser.add_argument('--generating_lr_tri', type=float, default=0.01)
+    parser.add_argument('--gen_round', type=int, default=100)
+    parser.add_argument('--train_batch_size', type=int, default=350)
+    parser.add_argument('--patch_mode', type=str, default='add')
+    parser.add_argument('--surrogate_dir', type=str, default="outputs/out",
+                         help="Surrogate dir!")
 
+    # Victim Args
+    parser.add_argument('--poison_amount', type=int, default=25)
+    parser.add_argument('--multi_test', type=int, default=3)
+    parser.add_argument('--random_seed', type=int, default=65)
+    parser.add_argument('--noise_path', type=str, default='./outputs/cifar-100/attack/coda-p/triggers/repeat-1/task-trigger-gen/06-29-03_59_57.npy')
+
+    
     return parser
 
 def get_args(argv):
@@ -65,6 +88,8 @@ class Logger(object):
         self.log.flush()
 
 if __name__ == '__main__':
+
+    
     args = get_args(sys.argv[1:])
 
     # determinstic backend
@@ -79,7 +104,7 @@ if __name__ == '__main__':
     with open(args.log_dir + '/args.yaml', 'w') as yaml_file:
         yaml.dump(vars(args), yaml_file, default_flow_style=False)
     
-    metric_keys = ['acc','time',]
+    metric_keys = ['acc', 'asr', 'untarget', 'time']
     save_keys = ['global', 'pt', 'pt-local']
     global_only = ['time']
     avg_metrics = {}
@@ -116,6 +141,7 @@ if __name__ == '__main__':
         except:
             start_r = 0
     # start_r = 0
+
     for r in range(start_r, args.repeat):
 
         print('************************************')
@@ -129,11 +155,11 @@ if __name__ == '__main__':
         torch.manual_seed(seed)
         torch.cuda.manual_seed(seed)
 
-        # set up a trainer
-        trainer = Trainer(args, seed, metric_keys, save_keys)
+        # set up an attacker
+        attacker = Attacker(args, seed, metric_keys, save_keys)
 
         # init total run metrics storage
-        max_task = trainer.max_task
+        max_task = attacker.max_task
         if r == 0: 
             for mkey in metric_keys: 
                 avg_metrics[mkey]['global'] = np.zeros((max_task,args.repeat))
@@ -141,11 +167,18 @@ if __name__ == '__main__':
                     avg_metrics[mkey]['pt'] = np.zeros((max_task,max_task,args.repeat))
                     avg_metrics[mkey]['pt-local'] = np.zeros((max_task,max_task,args.repeat))
 
-        # train model
-        avg_metrics = trainer.train(avg_metrics)  
+        # train attacker
+        # attacker.train_surrogate()  
+        # attacker.trigger_generating()        
+        
+        # set up a victim
+        victim = Victim(args, seed, metric_keys, save_keys)
+
+        # poison training
+        victim.train(avg_metrics)   
 
         # evaluate model
-        avg_metrics = trainer.evaluate(avg_metrics)    
+        avg_metrics = victim.evaluate(avg_metrics)    
 
         # save results
         for mkey in metric_keys: 
