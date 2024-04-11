@@ -155,11 +155,15 @@ if __name__ == '__main__':
         torch.manual_seed(seed)
         torch.cuda.manual_seed(seed)
 
-        # set up an attacker
-        attacker = Attacker(args, seed, metric_keys, save_keys)
+        # # set up an attacker
+        # attacker = Attacker(args, seed, metric_keys, save_keys)
 
-        # init total run metrics storage
-        max_task = attacker.max_task
+        # # init total run metrics storage
+        # max_task = attacker.max_task
+
+        # set up a victim
+        victim = Victim(args, seed, metric_keys, save_keys)
+        max_task = victim.max_task
         if r == 0: 
             for mkey in metric_keys: 
                 avg_metrics[mkey]['global'] = np.zeros((max_task,args.repeat))
@@ -171,8 +175,6 @@ if __name__ == '__main__':
         # attacker.train_surrogate()  
         # attacker.trigger_generating()        
         
-        # set up a victim
-        victim = Victim(args, seed, metric_keys, save_keys)
 
         # poison training
         victim.train(avg_metrics)   
